@@ -41,7 +41,12 @@ node --test tests/engine.test.cjs
 - `dist/index.html`, `dist/styles.css`: 인터페이스와 반응형 레이아웃
 - `dist/engine.js`: 근거 연결·초안·텍스트 점검 엔진
 - `dist/app.js`: 화면, 입력 검증, 저장과 상호작용
+- `dist/preference-ui.js`, `dist/preference-ui.css`: Preference Prompt 프로젝트의 현재 `ui/ux` 화면 구성을 참고한 카드 선택 홈·상단 캡슐 메뉴·공통 작업 화면 스타일
 - `tests/engine.test.cjs`: 근거 추적, 수치 비조작, 누락 정보, 입력 경계 검증
 - `docs/PRODUCT.md`: 공개 서비스 분석, 차별점과 후속 구현 방향
 
 Sites 배포 식별자는 `.openai/hosting.json`에 보관됩니다.
+
+## UI 방향
+
+밝은 뉴트럴 배경, 큰 타이포그래피, 떠 있는 캡슐형 내비게이션, 검은 스테이지와 파스텔 카드 덱을 사용합니다. 첫 화면에서 작업을 고르고 ‘선택한 작업 시작’ 버튼으로 집중 화면에 진입합니다. 카드는 이전·다음 버튼, 하단 선택 점, 좌우 방향키, 좌우 드래그로 이동할 수 있습니다. 내부 도구는 상단 작업 선택 메뉴로 바로 전환하며, 기존 브라우저 기록과 데이터 형식을 유지합니다. 애니메이션은 운영체제의 동작 줄이기 설정을 따릅니다.
