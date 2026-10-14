@@ -17,3 +17,5 @@ html{background:var(--bg);scroll-behavior:smooth;scroll-padding-top:100px}body{b
 .workflow-bottom{display:none}.workflow-copy{padding:10px 0 2px}.workflow-copy h3{font-size:clamp(25px,3.4dvh,31px);margin-bottom:10px}
 @media(min-width:761px){.launch-screen{padding-top:96px;gap:18px}.launch-heading h1{font-size:clamp(36px,6dvh,54px);margin:10px 0}.launch-kicker{min-height:22px;padding:3px 11px}}
 @media(max-width:380px){.survey-scale{gap:6px}.scale-choice span{width:24px;height:29px}.survey-scale>small{width:35px;max-width:35px}.flow-navigation{gap:6px}.flow-navigation select{max-width:137px}.flow-utilities{gap:2px}}
+.interview-layout>.stack{min-width:0}
+@media(max-width:760px){.interview-layout{grid-template-columns:minmax(0,1fr)}.camera{aspect-ratio:auto;min-height:255px;width:100%}}
