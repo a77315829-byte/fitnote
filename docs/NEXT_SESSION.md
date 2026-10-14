@@ -53,6 +53,10 @@ node --test tests/engine.test.cjs
 
 ## 배포와 저장 주의점
 
+GitHub 비공개 보관 저장소: https://github.com/a77315829-byte/fitnote
+
+현재 명령줄 Git 인증은 연결되지 않아, 로그인된 GitHub 웹 화면에서 폴더 구조를 유지해 전체 소스를 저장했습니다. 로컬 `origin`도 위 저장소로 설정되어 있습니다. 웹 업로드로 만든 GitHub 이력과 기존 로컬 Sites 작업 이력은 서로 시작점이 다릅니다. 나중에 명령줄 Git 인증을 연결한 뒤에는 먼저 `git fetch origin`으로 원격 상태를 확인하고, 양쪽 파일을 비교한 다음 `git merge --allow-unrelated-histories origin/main`으로 이력을 합치면 됩니다. 차이가 생긴 파일은 검토해서 해결하고, 기존 원격 이력을 강제로 덮어쓰지 않습니다.
+
 현재 배포: https://fitnote-career-lab.breezy-moss-5403.chatgpt.site
 
 본인 전용 비공개 Sites이며 ChatGPT 로그인이 필요합니다. 기존 Site ID는 `.openai/hosting.json`에 있습니다. 같은 사이트를 계속 수정할 때 ID를 유지합니다. GitHub에 코드를 올리는 것만으로 Sites가 자동 배포되도록 설정한 상태는 아닙니다.
