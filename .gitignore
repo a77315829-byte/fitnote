@@ -15,10 +15,20 @@ __pycache__/
 .pytest_cache/
 .cache/
 
-# Local output; dist/ is the tracked buildless application source
+# Framework output and generated document parser assets
+dist/
+.next/
+.wrangler/
+.sites-runtime/
+public/vendor/
+
+# Local output
 *.log
 *.tar
 *.tar.gz
 *.zip
 .DS_Store
 Thumbs.db
+
+.vinext/
+*.tsbuildinfo

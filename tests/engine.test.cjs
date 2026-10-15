@@ -1,12 +1,14 @@
 const test=require('node:test');
 const assert=require('node:assert/strict');
-const E=require('../dist/engine.js');
+const E=require('./load-browser.cjs')('engine.js');
 const experience={id:'owned',title:'문제 분석 프로젝트',situation:'목록 조회가 느렸습니다.',task:'개발과 원인 분석',action:'실행 계획을 비교하고 PostgreSQL 인덱스를 적용했습니다.',result:'테스트를 통과했습니다. 성능 수치는 미측정입니다.',tags:['SQL'],sample:false};
 const job={company:'테스트 기업',role:'Backend Developer',text:'PostgreSQL 데이터베이스, 성능 최적화와 테스트 경험'};
 test('추천은 저장된 경험 ID로 추적할 수 있다',()=>{const m=E.match(job,[experience]);assert.ok(m.length>0);assert.ok(m.every(r=>r.evidence.every(e=>e.id==='owned')));assert.ok(m.some(r=>r.name==='데이터베이스'&&r.evidence[0].sample===false));});
 test('맞지 않는 기술의 경험 근거를 만들어 내지 않는다',()=>{const m=E.match({text:'React, TypeScript'},[experience]);assert.equal(m.length,2);assert.ok(m.every(x=>x.evidence.length===0));});
-test('등록 경험이 없을 때 빈 근거를 안전하게 반환한다',()=>{assert.ok(E.match(job,[]).every(r=>r.evidence.length===0));assert.deepEqual(E.rank(job,[]),[]);});
+test('등록 경험이 없을 때 빈 근거를 안전하게 반환한다',()=>{assert.ok(E.match(job,[]).every(r=>r.evidence.length===0));assert.equal(E.rank(job,[]).length,0);});
 test('초안은 사용자 행동·결과를 그대로 보존하고 성과 수치를 만들지 않는다',()=>{const draft=E.draft({job,experience,question:'문제 해결 경험'});assert.ok(draft.includes(experience.action));assert.ok(draft.includes(experience.result));assert.ok(!/\d/.test(draft));assert.ok(draft.includes('[이 경험에서'));});
 test('누락된 경험 결과는 작성 표시로 남긴다',()=>{const draft=E.draft({job,experience:{...experience,result:''}});assert.ok(draft.includes('[직접 작성해 주세요]'));assert.equal(E.review(draft,5000).find(c=>c.name==='작성 필요 표시 해소').ok,false);});
 test('글자 제한을 초과한 문서는 통과로 표시하지 않는다',()=>{assert.equal(E.review('가'.repeat(1001),1000).find(c=>c.name==='글자 수').ok,false);assert.equal(E.review('',1000).find(c=>c.name==='글자 수').ok,false);});
-test('빈 면접 답변을 분석하거나 점수로 환산하지 않는다',()=>{assert.deepEqual(E.interviewReview('',0),[]);const r=E.interviewReview('제가 프로젝트에서 문제를 분석했고 결과를 확인했습니다.',90);assert.ok(r.every(c=>typeof c.ok==='boolean'));assert.ok(r.every(c=>!('score' in c)));});
+test('빈 면접 답변을 분석하거나 점수로 환산하지 않는다',()=>{assert.equal(E.interviewReview('',0).length,0);const r=E.interviewReview('제가 프로젝트에서 문제를 분석했고 결과를 확인했습니다.',90);assert.ok(r.every(c=>typeof c.ok==='boolean'));assert.ok(r.every(c=>!('score' in c)));});
+test('태그와 프로젝트 제목만으로 기술 사용 근거를 인정하지 않는다',()=>{const e={...experience,title:'React 학습 예정',tags:['React'],action:'문서를 정리했습니다.',task:'일정 정리',result:'회고를 남겼습니다.'};assert.equal(E.match({text:'React'},[e])[0].evidence.length,0);});
+test('경험이 없다는 문장을 기술 사용 근거로 연결하지 않는다',()=>{const e={...experience,action:'React 경험이 없습니다.',task:'일정 정리',result:''};assert.equal(E.match({text:'React'},[e])[0].evidence.length,0);});

@@ -5,7 +5,7 @@
     {name:'TypeScript', re:/typescript|타입스크립트|\bts\b/i, tip:'타입으로 방지한 오류와 설계한 인터페이스를 남겨 보세요.'},
     {name:'성능 최적화', re:/성능|최적화|렌더링|로딩|캐시|performance|redis/i, tip:'측정 도구, 변경 전후 수치, 측정 환경을 함께 적어 보세요.'},
     {name:'사용자 관점', re:/사용자|접근성|고객|ux|사용성/i, tip:'사용자 문제를 어떻게 발견하고 개선을 확인했는지 적어 보세요.'},
-    {name:'협업', re:/협업|코드\s?리뷰|팀|소통|git|협력|디자인/i, tip:'의견이 달랐던 순간과 합의 과정을 구체화해 보세요.'},
+    {name:'협업', re:/협업|코드\s?리뷰|팀|소통|협력|디자이너/i, tip:'의견이 달랐던 순간과 합의 과정을 구체화해 보세요.'},
     {name:'Python', re:/python|파이썬|fastapi|django/i, tip:'직접 구현한 API와 예외 처리를 설명해 보세요.'},
     {name:'데이터베이스', re:/sql|postgres|mysql|데이터베이스|쿼리|db\b/i, tip:'스키마 설계 이유, 쿼리 실행 계획과 트랜잭션 사례를 적어 보세요.'},
     {name:'API 설계', re:/api|서버|백엔드|rest|인증/i, tip:'인터페이스 설계와 실패 상황 대응을 근거로 남겨 보세요.'},
@@ -13,11 +13,15 @@
     {name:'문제 해결', re:/문제|해결|분석|디버깅|원인|알고리즘/i, tip:'증상, 가설, 검증, 해결의 순서를 정리해 보세요.'},
     {name:'인프라', re:/aws|docker|배포|ci\/cd|kubernetes|인프라/i, tip:'배포 구조와 장애 대응 또는 자동화 사례를 설명해 보세요.'},
     {name:'Java / Spring', re:/\bjava\b|spring|자바|스프링/i, tip:'Spring에서 직접 설계한 책임과 구조를 정리해 보세요.'},
+    {name:'AI 활용', re:/\bAI\b|인공지능|LLM|생성형|GPT|RAG/i, tip:'AI 도구를 쓴 과정과 본인이 수정·검증한 부분을 구분해 주세요.'},
   ];
   const textOf = e => [e.title,e.situation,e.task,e.action,e.result,e.tags].flat().join(' ');
   function match(job, experiences) {
     const wanted=SKILLS.filter(s=>s.re.test(job.text||''));
-    return wanted.map(s=>({name:s.name,tip:s.tip,evidence:experiences.filter(e=>s.re.test(textOf(e))).map(e=>({id:e.id,title:e.title,complete:!!(e.action?.trim()&&e.result?.trim()),sample:!!e.sample}))}));
+    return wanted.map(s=>({name:s.name,tip:s.tip,evidence:experiences.map(e=>{
+      const quote=[e.task,e.action,e.result].filter(Boolean).flatMap(t=>t.split(/[\n.!?。]+/)).find(t=>s.re.test(t)&&!/(경험(?:이|은|가)?\s*없|사용(?:한|해\s*본)?\s*적(?:이)?\s*없|해보지\s*않|미경험)/.test(t));
+      return quote?{id:e.id,title:e.title,quote:quote.trim(),complete:!!(e.action?.trim()&&e.result?.trim()),sample:!!e.sample}:null;
+    }).filter(Boolean)}));
   }
   function rank(job,experiences) {
     const req=match(job,experiences);

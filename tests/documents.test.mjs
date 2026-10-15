@@ -1,0 +1,12 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFile} from 'node:fs/promises';
+import mammoth from 'mammoth';
+import {getDocument} from 'pdfjs-dist/legacy/build/pdf.mjs';
+import {createRequire} from 'node:module';
+const require=createRequire(import.meta.url);
+const {validateZip}=require('./load-browser.cjs')('documents.js');
+test('한국어 DOCX 원문을 성과 추가 없이 추출한다',async()=>{const buffer=await readFile(new URL('./fixtures/synthetic-projects.docx',import.meta.url));const arrayBuffer=buffer.buffer.slice(buffer.byteOffset,buffer.byteOffset+buffer.byteLength);validateZip(arrayBuffer);const {value}=await mammoth.extractRawText({buffer},{externalFileAccess:false});assert.ok(value.includes('제가 API 테스트를 작성했습니다. 수치는 미측정입니다.'));assert.ok(value.includes('# 테스트 프로젝트 B'));});
+test('PDF 텍스트와 실제 페이지 수를 추출한다',async()=>{const data=new Uint8Array(await readFile(new URL('./fixtures/synthetic-project.pdf',import.meta.url)));const task=getDocument({data,isEvalSupported:false,useSystemFonts:false});try{const pdf=await task.promise;assert.equal(pdf.numPages,1);const text=(await (await pdf.getPage(1)).getTextContent()).items.map(i=>i.str||'').join(' ');assert.ok(text.includes('No performance metric was measured.'));}finally{await task.destroy();}});
+test('텍스트층이 없는 PDF는 내용을 만들어 내지 않는다',async()=>{const task=getDocument({data:new Uint8Array(await readFile(new URL('./fixtures/image-only.pdf',import.meta.url)))});try{const pdf=await task.promise;assert.equal((await (await pdf.getPage(1)).getTextContent()).items.length,0);}finally{await task.destroy();}});
+test('비정상 DOCX·과도한 압축 해제 크기를 차단한다',()=>{assert.throws(()=>validateZip(new ArrayBuffer(200)));const data=new ArrayBuffer(100),v=new DataView(data);v.setUint32(0,0x02014b50,true);v.setUint32(24,100*1024*1024,true);assert.throws(()=>validateZip(data));});

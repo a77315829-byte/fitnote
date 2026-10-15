@@ -1,0 +1,17 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {handleDraft,validatePayload,validatePlan,apiStatus,POLICY_VERSION} from '../server/draft-api.mjs';
+const env={OPENAI_API_KEY:'unit-test-placeholder',OPENAI_MODEL:'unit-test-model'};
+const payload={policyVersion:POLICY_VERSION,consent:true,question:'직무 관련 경험',facts:[{id:'E1',field:'action',text:'테스트를 작성했습니다.',sample:false,reviewed:true}],requirements:[{id:'R1',text:'테스트 경험'}]};
+const request=(data=payload,origin='https://fitnote.test')=>new Request('https://fitnote.test/api/draft',{method:'POST',headers:{Origin:origin,'Content-Type':'application/json'},body:JSON.stringify(data)});
+test('연결 상태는 키 값과 모델명을 노출하지 않는다',()=>{const s=apiStatus(env);assert.equal(s.ready,true);assert.ok(!JSON.stringify(s).includes(env.OPENAI_API_KEY));assert.ok(!JSON.stringify(s).includes(env.OPENAI_MODEL));});
+test('인증되지 않은 요청은 AI를 호출하지 않는다',async()=>{let calls=0;const r=await handleDraft(request(),env,null,()=>{calls++;});assert.equal(r.status,401);assert.equal(calls,0);});
+test('다른 Origin 요청은 AI를 호출하지 않는다',async()=>{let calls=0;const r=await handleDraft(request(payload,'https://other.test'),env,'u',()=>{calls++;});assert.equal(r.status,403);assert.equal(calls,0);});
+test('키·모델이 없으면 연결을 꾸며내지 않는다',async()=>assert.equal((await handleDraft(request(),{},'u')).status,503));
+test('예시·미확인 경험과 동의 없는 전송은 거부한다',()=>{for(const update of [{sample:true},{reviewed:false}])assert.throws(()=>validatePayload({...payload,facts:[{...payload.facts[0],...update}]}));assert.throws(()=>validatePayload({...payload,consent:false}));});
+test('64KB를 초과한 요청은 upstream 호출 전에 거부한다',async()=>{const r=await handleDraft(request({...payload,question:'가'.repeat(70000)}),env,'large',()=>assert.fail('must not call'));assert.equal(r.status,400);});
+test('AI가 새 근거 ID를 반환하면 결과를 폐기한다',()=>assert.throws(()=>validatePlan({factOrder:['E99'],requirementIds:[],missingQuestions:[]},payload)));
+test('중복·누락 근거 ID와 존재하지 않는 요구사항을 폐기한다',()=>{assert.throws(()=>validatePlan({factOrder:['E1','E1'],requirementIds:[],missingQuestions:[]},payload));assert.throws(()=>validatePlan({factOrder:['E1'],requirementIds:['R99'],missingQuestions:[]},payload));});
+test('AI 응답의 임의 본문은 반환하지 않고 기존 ID만 사용한다',async()=>{const r=await handleDraft(request(),env,'mock-success',async(url,options)=>{assert.equal(url,'https://api.openai.com/v1/responses');const b=JSON.parse(options.body);assert.equal(b.store,false);assert.equal(b.text.format.strict,true);assert.ok(!b.input.includes('evidenceUrl'));return Response.json({status:'completed',output:[{content:[{type:'output_text',text:JSON.stringify({factOrder:['E1'],requirementIds:['R1'],missingQuestions:['테스트로 무엇을 확인했나요?'],draft:'매출을 900% 높였습니다.'})}]}]});});const result=await r.json();assert.equal(r.status,200);assert.deepEqual(result.factOrder,['E1']);assert.ok(!JSON.stringify(result).includes('900%'));});
+test('upstream 오류에 원문·키·원격 오류를 노출하지 않는다',async()=>{const r=await handleDraft(request(),env,'mock-failure',async()=>Response.json({error:env.OPENAI_API_KEY},{status:401}));assert.equal(r.status,502);assert.ok(!(await r.text()).includes(env.OPENAI_API_KEY));});
+test('완료되지 않은 응답을 초안으로 사용하지 않는다',async()=>assert.equal((await handleDraft(request(),env,'mock-incomplete',async()=>Response.json({status:'incomplete'}))).status,502));
